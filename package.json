@@ -1,0 +1,16 @@
+```json
+{
+  "name": "light-social",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "uuid": "^9.0.0",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^7.0.0"
+  }
+}
+```
