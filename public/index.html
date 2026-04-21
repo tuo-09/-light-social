@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>轻触 · 匿名相遇</title>
+<style>
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-modal: rgba(255,255,255,0.72);
+  --text-primary: #1c1c1e;
+  --text-secondary: #8e8e93;
+  --text-accent: #007aff;
+  --glass-blur: 20px;
+  --glass-saturate: 1.5;
+  --glass-border: rgba(255,255,255,0.2);
+  --radius-xs: 8px;
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --radius-xl: 48px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.06);
+  --shadow-lg: 0 16px 32px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg-primary); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+#app { width: 100%; max-width: 480px; height: 100vh; position: relative; overflow: hidden; background: var(--bg-primary); }
+button { border-radius: var(--radius-xl); padding: 12px 24px; background: var(--text-accent); color: white; border: none; font-weight: 500; font-size: 16px; transition: all 0.15s ease; cursor: pointer; -webkit-user-select: none; user-select: none; }
+button:active { transform: scale(0.97); opacity: 0.8; }
+button.secondary { background: transparent; color: var(--text-accent); border: 1px solid var(--text-accent); }
+input, textarea { border-radius: var(--radius-xl); padding: 14px 18px; border: 0.5px solid rgba(60,60,67,0.12); background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); font-size: 16px; width: 100%; outline: none; transition: border 0.2s; }
+input:focus, textarea:focus { border-color: var(--text-accent); }
+.glass-card { background: rgba(255,255,255,0.72); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); border: 0.5px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 20px; }
+.view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary); }
+.hidden { display: none !important; }
+#homeView { display: flex; flex-direction: column; }
+.top-half { height: 50vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
+.bottom-half { height: 50vh; display: flex; flex-direction: column; padding: 16px; padding-top: 0; }
+.match-card { width: 100%; text-align: center; }
+.match-card h2 { margin: 0 0 12px 0; font-weight: 600; }
+.match-card button { width: 100%; margin-top: 8px; }
+.board-container { flex: 1; display: flex; flex-direction: column; min-height: 0; background: transparent; }
+.board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.board-header h3 { margin: 0; }
+.sort-tabs span { padding: 6px 12px; border-radius: var(--radius-full); background: transparent; color: var(--text-secondary); font-size: 14px; }
+.sort-tabs span.active { background: var(--text-accent); color: white; }
+#boardList { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+.post-area { display: flex; gap: 8px; margin-top: 12px; }
+.post-area input { flex: 1; }
+.post-area button { padding: 12px 20px; }
+.message-card { padding: 16px; transition: transform 0.2s, box-shadow 0.2s; }
+.message-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.avatar { width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--text-accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 500; }
+.nickname { font-weight: 500; color: var(--text-primary); }
+.timestamp { margin-left: auto; font-size: 12px; color: var(--text-secondary); }
+.message-content { margin-bottom: 12px; line-height: 1.5; word-break: break-word; }
+.replies-section { margin-top: 12px; padding-top: 12px; border-top: 0.5px solid rgba(60,60,67,0.08); }
+.reply-item { padding: 8px 0 8px 12px; border-left: 2px solid var(--text-accent); margin-bottom: 8px; font-size: 14px; color: var(--text-secondary); }
+.reply-nickname { font-weight: 500; color: var(--text-primary); margin-right: 6px; }
+.reply-btn { margin-top: 8px; padding: 6px 12px; font-size: 14px; background: transparent; color: var(--text-accent); border: 0.5px solid var(--text-accent); border-radius: var(--radius-full); }
+.reply-btn:active { background: var(--text-accent); color: white; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
+#matchModal { position: absolute; inset: 0; background: var(--bg-modal); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: flex-end; transition: opacity 0.25s; }
+#matchModal.hidden { display: none; }
+.modal-content { width: 100%; background: rgba(255,255,255,0.92); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 24px 20px 30px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2,0.9,0.4,1); border-top: 0.5px solid var(--glass-border); }
+#matchModal:not(.hidden) .modal-content { transform: translateY(0); }
+.option-group { margin-bottom: 24px; }
+.option-group label { display: block; margin-bottom: 10px; font-weight: 500; color: var(--text-primary); }
+.pill-container { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { padding: 10px 18px; border-radius: var(--radius-full); background: rgba(120,120,128,0.08); color: var(--text-primary); font-size: 15px; border: none; transition: all 0.15s; flex: 0 1 auto; }
+.pill.active { background: var(--text-accent); color: white; }
+.modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+.modal-actions button { flex: 1; }
+#chatView { background: #ffffff; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
+.chat-header button { padding: 8px 16px; background: transparent; color: var(--text-accent); }
+#chatMessageContainer { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
+.bubble { max-width: 80%; padding: 12px 16px; border-radius: 22px; line-height: 1.4; word-break: break-word; animation: fadeInUp 0.2s ease; }
+.bubble-me { background: var(--text-accent); color: white; align-self: flex-end; border-bottom-right-radius: 6px; }
+.bubble-other { background: #e9e9ed; color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 6px; }
+.chat-input-area { display: flex; gap: 8px; padding: 12px 16px; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.05); }
+.chat-input-area input { flex: 1; }
+.chat-input-area button { padding: 12px 20px; }
+#replyModal { position: absolute; inset: 0; background: var(--bg-modal); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: flex-end; }
+#replyModal.hidden { display: none; }
+#replyModal .modal-content { transform: translateY(0); }
+#replyTargetContent { background: rgba(0,0,0,0.03); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; color: var(--text-secondary); max-height: 120px; overflow-y: auto; }
+.reply-actions { display: flex; gap: 12px; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(0,122,255,0.2); border-top-color: var(--text-accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#matchStatusMsg { margin-top: 12px; font-size: 14px; color: var(--text-secondary); min-height: 24px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="homeView" class="view">
+    <div class="top-half"><div class="glass-card match-card"><h2>✨ 随机匹配</h2><button id="showMatchModal">开始匹配</button><div id="matchStatusMsg"></div></div></div>
+    <div class="bottom-half"><div class="glass-card board-container"><div class="board-header"><h3>📜 留言板</h3><div class="sort-tabs"><span class="active">最新</span></div></div><div id="boardList"></div><div class="post-area"><input id="boardInput" placeholder="说点什么..." maxlength="300" /><button id="postBoardBtn">发送</button></div></div></div>
+  </div>
+  <div id="matchModal" class="hidden"><div class="modal-content"><h3 style="margin-top:0;margin-bottom:20px;">相遇偏好</h3><div class="option-group" data-type="myGender"><label>我是</label><div class="pill-container"><button class="pill" data-value="male">男</button><button class="pill" data-value="female">女</button><button class="pill active" data-value="secret">保密</button></div></div><div class="option-group" data-type="wantGender"><label>我想找</label><div class="pill-container"><button class="pill" data-value="male">男</button><button class="pill" data-value="female">女</button><button class="pill active" data-value="any">都可以</button></div></div><div class="option-group" data-type="ageRange"><label>年龄段</label><div class="pill-container"><button class="pill" data-value="18-22">18-22</button><button class="pill" data-value="23-30">23-30</button><button class="pill" data-value="31+">31+</button><button class="pill active" data-value="any">随意</button></div></div><div class="modal-actions"><button class="secondary" id="cancelMatch">取消</button><button id="confirmMatch">开始匹配</button></div></div></div>
+  <div id="chatView" class="view hidden"><div class="chat-header glass-card" style="border-radius:0;background:rgba(255,255,255,0.9);"><span id="partnerDisplayName">匹配中...</span><button id="endChatBtn" style="box-shadow:none;">结束</button></div><div id="chatMessageContainer"></div><div class="chat-input-area"><input id="chatMessageInput" placeholder="输入消息..." maxlength="500" /><button id="sendChatBtn">发送</button></div></div>
+  <div id="replyModal" class="hidden"><div class="modal-content"><h4 style="margin-top:0;">回应留言</h4><div id="replyTargetContent"></div><input id="replyInput" placeholder="写下你的回应..." maxlength="200" /><div class="reply-actions" style="margin-top:20px;"><button class="secondary" id="cancelReplyBtn">取消</button><button id="sendReplyBtn">发送</button></div></div></div>
+</div>
+<script>
+(function(){
+  "use strict";
+  let userId = localStorage.getItem('uid');
+  const nickname = '访客_' + Math.random().toString(36).substring(2,6);
+  let roomId = null, matchTimer = null, chatTimer = null, chatIndex = 0, isMatching = false, matchAttempts = 0;
+  const MAX_MATCH_ATTEMPTS = 15;
+  const renderedMessageIds = new Set();
+  const actionLock = {};
+  let currentReplyMessageId = null;
+  const homeView = document.getElementById('homeView');
+  const chatView = document.getElementById('chatView');
+  const matchModal = document.getElementById('matchModal');
+  const replyModal = document.getElementById('replyModal');
+  const matchStatusMsg = document.getElementById('matchStatusMsg');
+  const boardList = document.getElementById('boardList');
+  const chatMessageContainer = document.getElementById('chatMessageContainer');
+  const partnerDisplayName = document.getElementById('partnerDisplayName');
+  function escapeHtml(s) { if(!s) return ''; return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function throttle(key, delay=1000) { const now = Date.now(); if(actionLock[key] && now - actionLock[key] < delay) return false; actionLock[key] = now; return true; }
+  function validateInput(str, max=500) { const t = String(str).trim(); if(!t || t.length > max) return null; return t; }
+  function getMessageId(msg) { return msg.senderId+'_'+msg.timestamp+'_'+msg.content.length; }
+  function formatTime(ts) { const diff = Date.now() - ts; const mins = Math.floor(diff/60000); if(mins<1) return '刚刚'; if(mins<60) return mins+'分钟前'; const h = Math.floor(mins/60); if(h<24) return h+'小时前'; return Math.floor(h/24)+'天前'; }
+  function showHome() { homeView.classList.remove('hidden'); chatView.classList.add('hidden'); matchModal.classList.add('hidden'); replyModal.classList.add('hidden'); }
+  function exitChat() { if(chatTimer) { clearInterval(chatTimer); chatTimer = null; } if(roomId) { fetch('/api/chat/leave', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({roomId}) }).catch(()=>{}); } roomId = null; chatIndex = 0; renderedMessageIds.clear(); chatMessageContainer.innerHTML = ''; showHome(); }
+  function stopMatch(silent=false) { isMatching = false; matchAttempts = 0; if(matchTimer) { clearInterval(matchTimer); matchTimer = null; } if(!silent) { fetch('/api/match/cancel', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId}) }).catch(()=>{}); } matchStatusMsg.innerHTML = ''; }
+  async function init() { if(!userId) { try { const r = await fetch('/api/init'); const d = await r.json(); userId = d.userId; localStorage.setItem('uid', userId); } catch(e) { userId = 'temp_'+Date.now(); } } loadBoard(); setInterval(loadBoard, 5000); }
+  function getSelectedPill(type) { const g = document.querySelector('.option-group[data-type="'+type+'"]'); const a = g.querySelector('.pill.active'); return a ? a.dataset.value : 'any'; }
+  document.querySelectorAll('.pill').forEach(p => p.addEventListener('click', function(){ this.parentNode.querySelectorAll('.pill').forEach(x => x.classList.remove('active')); this.classList.add('active'); }));
+  document.getElementById('showMatchModal').onclick = () => { if(isMatching) return; matchModal.classList.remove('hidden'); };
+  document.getElementById('cancelMatch').onclick = () => matchModal.classList.add('hidden');
+  document.getElementById('confirmMatch').onclick = async () => { if(!throttle('match',2000)||isMatching) return; const myGender = getSelectedPill('myGender'); const wantGender = getSelectedPill('wantGender'); const ageRange = getSelectedPill('ageRange'); try { await fetch('/api/match/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId,myGender,wantGender,ageRange}) }); } catch(e){} matchModal.classList.add('hidden'); matchStatusMsg.innerHTML = '<span class="loading-spinner"></span> 匹配中...'; isMatching = true; matchAttempts = 0; if(matchTimer) clearInterval(matchTimer); matchTimer = setInterval(async () => { matchAttempts++; if(matchAttempts >= MAX_MATCH_ATTEMPTS) { stopMatch(); if(confirm('暂时没有合适的人，是否继续等待？')) document.getElementById('confirmMatch').click(); return; } try { const r = await fetch('/api/match/check?userId='+userId); const d = await r.json(); if(d.matched) { stopMatch(true); enterChat(d.roomId); } } catch(e){} }, 2000); };
+  function enterChat(id) { roomId = id; chatIndex = 0; renderedMessageIds.clear(); chatMessageContainer.innerHTML = ''; homeView.classList.add('hidden'); chatView.classList.remove('hidden'); matchModal.classList.add('hidden'); partnerDisplayName.innerText = '云朵_'+Math.floor(Math.random()*1000); if(chatTimer) clearInterval(chatTimer); chatTimer = setInterval(pollChat, 1500); }
+  async function pollChat() { if(!roomId) return; try { const r = await fetch('/api/chat/poll?roomId='+roomId+'&lastMessageIndex='+chatIndex); const d = await r.json(); if(d.closed) { alert('对方已离开'); exitChat(); return; } if(d.messages) { d.messages.forEach(m => { const id = getMessageId(m); if(renderedMessageIds.has(id)) return; renderedMessageIds.add(id); const div = document.createElement('div'); div.className = 'bubble ' + (m.senderId===userId ? 'bubble-me' : 'bubble-other'); div.textContent = m.content; chatMessageContainer.appendChild(div); }); chatIndex = d.currentLength; chatMessageContainer.scrollTop = chatMessageContainer.scrollHeight; } } catch(e){} }
+  document.getElementById('sendChatBtn').onclick = async () => { if(!throttle('sendChat',800)) return; const c = validateInput(document.getElementById('chatMessageInput').value,500); if(!c||!roomId) return; try { await fetch('/api/chat/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({roomId,userId,content:c}) }); document.getElementById('chatMessageInput').value = ''; } catch(e){} };
+  document.getElementById('endChatBtn').onclick = () => exitChat();
+  async function loadBoard() { try { const r = await fetch('/api/board/list'); const d = await r.json(); renderBoard(d.messages||[]); } catch(e){} }
+  function renderBoard(msgs) { if(!msgs.length) { boardList.innerHTML = '<div class="empty-state">✨ 还没有留言，写一条吧</div>'; return; } boardList.innerHTML = ''; msgs.sort((a,b)=>b.timestamp-a.timestamp).forEach(m => { const card = document.createElement('div'); card.className = 'glass-card message-card'; const safeC = escapeHtml(m.content); const safeN = escapeHtml(m.nickname||'匿名'); let rHtml = ''; if(m.replies&&m.replies.length) { rHtml = '<div class="replies-section">'+m.replies.map(r=>'<div class="reply-item"><span class="reply-nickname">'+escapeHtml(r.nickname||'匿名')+':</span> '+escapeHtml(r.content)+'</div>').join('')+'</div>'; } card.innerHTML = '<div class="message-header"><div class="avatar">'+safeN.charAt(0)+'</div><span class="nickname">'+safeN+'</span><span class="timestamp">'+formatTime(m.timestamp)+'</span></div><div class="message-content">'+safeC+'</div>'+rHtml+'<button class="reply-btn" data-id="'+m.id+'" data-content="'+safeC.replace(/"/g,'&quot;')+'">回应</button>'; boardList.appendChild(card); }); document.querySelectorAll('.reply-btn').forEach(b => b.addEventListener('click', e => { openReplyModal(b.dataset.id, b.dataset.content); })); }
+  document.getElementById('postBoardBtn').onclick = async () => { if(!throttle('postBoard',1500)) return; const c = validateInput(document.getElementById('boardInput').value,300); if(!c) return; try { await fetch('/api/board/post', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId,nickname,content:c}) }); document.getElementById('boardInput').value = ''; loadBoard(); } catch(e){} };
+  function openReplyModal(id, content) { currentReplyMessageId = id; document.getElementById('replyTargetContent').textContent = content; replyModal.classList.remove('hidden'); }
+  document.getElementById('cancelReplyBtn').onclick = () => { replyModal.classList.add('hidden'); document.getElementById('replyInput').value = ''; };
+  document.getElementById('sendReplyBtn').onclick = async () => { if(!throttle('reply',1500)) return; const c = validateInput(document.getElementById('replyInput').value,200); if(!c||!currentReplyMessageId) return; try { await fetch('/api/board/reply', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messageId:currentReplyMessageId,userId,nickname,content:c}) }); replyModal.classList.add('hidden'); document.getElementById('replyInput').value = ''; loadBoard(); } catch(e){} };
+  let touchStartX = 0;
+  chatView.addEventListener('touchstart', e => { if(e.target.tagName==='INPUT') return; touchStartX = e.touches[0].clientX; });
+  chatView.addEventListener('touchend', e => { if(e.target.tagName==='INPUT') return; const delta = e.changedTouches[0].clientX - touchStartX; if(touchStartX<30 && delta>80) exitChat(); });
+  window.addEventListener('beforeunload', () => { if(matchTimer) clearInterval(matchTimer); if(chatTimer) clearInterval(chatTimer); if(roomId) navigator.sendBeacon('/api/chat/leave', JSON.stringify({roomId})); });
+  init();
+})();
+</script>
+</body>
+</html>
